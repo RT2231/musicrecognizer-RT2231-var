@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Spotify 認証</title>
+  <style>
+    body { font-family: sans-serif; display: flex; align-items: center; justify-content: center;
+           height: 100vh; margin: 0; background: #121212; color: #fff; }
+    .msg { text-align: center; }
+    .spinner { font-size: 2rem; animation: spin 1s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="msg">
+    <div class="spinner">🎵</div>
+    <p id="status">Spotify と連携中...</p>
+  </div>
+  <script>
+    /**
+     * Spotify OAuth コールバックページ。
+     * 認可コードを受け取り、Worker /spotify/callback に POST してトークンを取得。
+     * 取得したトークンを opener（親ウィンドウ）の localStorage に保存して閉じる。
+     */
+    (async () => {
+      const params   = new URLSearchParams(location.search);
+      const code     = params.get("code");
+      const state    = params.get("state");
+      const error    = params.get("error");
+      const statusEl = document.getElementById("status");
+
+      if (error || !code) {
+        statusEl.textContent = "認証がキャンセルされました。";
+        setTimeout(() => window.close(), 1500);
+        return;
+      }
+
+      // state 検証
+      const savedState = opener?.localStorage?.getItem("spotify_auth_state");
+      if (savedState && savedState !== state) {
+        statusEl.textContent = "セキュリティエラー（state 不一致）";
+        setTimeout(() => window.close(), 2000);
+        return;
+      }
+
+      const WORKER_URL    = opener?.WORKER_URL || "";
+      const redirect_uri  = `${location.origin}${location.pathname}`;
+
+      try {
+        const res  = await fetch(`${WORKER_URL}spotify/callback`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, redirect_uri }),
+        });
+        const json = await res.json();
+        if (!json.success) throw new Error(json.error);
+
+        // トークンを親ウィンドウの localStorage に保存
+        const expiresAt = Date.now() + (json.expires_in - 60) * 1000; // 60秒余裕
+        opener.localStorage.setItem("spotify_access_token",     json.access_token);
+        opener.localStorage.setItem("spotify_token_expires_at", String(expiresAt));
+
+        statusEl.textContent = "✅ 連携完了！このウィンドウを閉じます...";
+        setTimeout(() => window.close(), 1000);
+      } catch (err) {
+        statusEl.textContent = `エラー: ${err.message}`;
+        setTimeout(() => window.close(), 2500);
+      }
+    })();
+  </script>
+</body>
+</html>

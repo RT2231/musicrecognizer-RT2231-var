@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>音楽認識ツール</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/png" href="./favicon.png" />
+    <link rel="shortcut icon" href="./favicon.png" />
+    <link rel="apple-touch-icon" href="./favicon.png" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>
+        🎵 音楽認識ツール
+        <span class="version-badge">v3.2.8</span>
+      </h1>
+
+      <section>
+        <h3>📁 ファイル判定</h3>
+        <!-- ドロップゾーン＋ファイル選択を統合 -->
+        <label id="dropZone" for="fileInput">
+          <span class="drop-icon">🎵</span>
+          <span class="drop-main">ここにファイルをドロップ</span>
+          <span class="drop-sub">または <span class="drop-link">クリックして選択</span></span>
+          <span class="drop-hint">音声・動画ファイル対応</span>
+          <input type="file" id="fileInput" accept="audio/*,video/*" />
+        </label>
+        <div id="selectedFileInfo" class="selected-file-info" style="display:none;"></div>
+        <button id="fileSend">判定</button>
+        <!-- ビジュアルフィンガープリント -->
+        <div id="fingerprintSection" class="fp-section" style="display:none;">
+          <div class="fp-header">
+            <span class="fp-title">🔬 音声フィンガープリント <span class="fp-hint">— ACRCloudへ送信する音声の周波数分析</span></span>
+            <span class="fp-meta" id="fpMeta"></span>
+          </div>
+          <!-- スペクトログラム本体 -->
+          <div class="fp-body">
+            <!-- 周波数帯ラベル（左側） -->
+            <div class="fp-freq-labels" id="fpFreqLabels"></div>
+            <!-- Canvas + ホバーオーバーレイ -->
+            <div class="fp-canvas-wrap" id="fpCanvasWrap">
+              <canvas id="fingerprintCanvas" class="fp-canvas"></canvas>
+              <div class="fp-tooltip" id="fpTooltip" style="display:none;"></div>
+            </div>
+            <!-- dBスケールバー（右側） -->
+            <div class="fp-db-scale" id="fpDbScale">
+              <div class="fp-db-bar"></div>
+              <div class="fp-db-labels">
+                <span>強</span>
+                <span>弱</span>
+              </div>
+            </div>
+          </div>
+          <!-- 時間軸（下部） -->
+          <div class="fp-time-axis" id="fpTimeAxis"></div>
+          <!-- 凡例テキスト -->
+          <div class="fp-legend-row">
+            <span class="fp-legend-item"><span class="fp-legend-dot" style="background:#0d2b6e"></span>無音・背景</span>
+            <span class="fp-legend-item"><span class="fp-legend-dot" style="background:#1a7a5e"></span>中程度</span>
+            <span class="fp-legend-item"><span class="fp-legend-dot" style="background:#c8c800"></span>強め</span>
+            <span class="fp-legend-item"><span class="fp-legend-dot" style="background:#ff4400"></span>最大</span>
+            <span class="fp-legend-sep">|</span>
+            <span class="fp-legend-note">横軸：時間　縦軸：周波数（低音↓ 高音↑）　色：音の強さ</span>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h3>🎙 録音</h3>
+        <div class="input-group">
+          <label for="micSelect">マイク:</label>
+          <select id="micSelect">
+            <option value="">デフォルト</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="recSec">録音時間:</label>
+          <select id="recSec">
+            <option value="3">3秒</option>
+            <option value="5">5秒</option>
+            <option value="8">8秒</option>
+            <option value="10">10秒</option>
+          </select>
+        </div>
+        <button id="recBtn">録音開始</button>
+        <button id="stopBtn" class="secondary" disabled>停止</button>
+        <div id="counter"></div>
+        <div id="vizContainer" class="viz-container" style="display:none;">
+          <canvas id="vizCanvas" class="viz-canvas"></canvas>
+          <div id="vizProgress" class="viz-progress"><div id="vizProgressBar" class="viz-progress-bar"></div></div>
+        </div>
+        <audio id="recordPreview" controls style="display:none; margin-top:10px; width:100%;"></audio>
+        <button id="sendRecordBtn" class="secondary" style="display:none; margin-top:10px;">この録音を判定</button>
+      </section>
+
+      <section>
+        <h3>📊 認識結果</h3>
+        <div id="result">未判定</div>
+      </section>
+
+      <section id="lyricsSection" style="display:none;">
+        <h3>🎤 歌詞</h3>
+        <div id="lyrics"></div>
+      </section>
+
+      <section>
+        <h3>📘 MusicBrainz 詳細</h3>
+        <div id="mbDetail">未取得</div>
+      </section>
+
+      <section id="youtubeSection" style="display:none;">
+        <h3>🎬 YouTube</h3>
+        <div id="youtubeContent"></div>
+      </section>
+
+      <section id="previewSection" style="display:none;">
+        <h3>🎧 プレビュー</h3>
+        <div id="itunesPreviewContent"></div>
+        <div id="spotifyContent"></div>
+      </section>
+
+      <section>
+        <h3>🗂 履歴
+          <!-- クラウド同期インジケーター（同期中/済/失敗を表示） -->
+          <span id="cloudSyncIndicator" class="sync-indicator" style="display:none;"></span>
+        </h3>
+        <div class="history-controls">
+          <input type="text" id="historySearch" placeholder="曲名・アーティストで検索..." />
+          <button id="starFilterBtn" class="secondary small">☆ お気に入り <span id="starBadge" class="star-badge" style="display:none;"></span></button>
+          <button id="clearHistory" class="secondary small">履歴をクリア</button>
+          <button id="exportHistory" class="secondary small" onclick="openExportModal()">📥 エクスポート</button>
+          <button id="cloudSyncBtn" class="secondary small cloud-restore-btn" onclick="openCloudSyncModal()">☁️ クラウド同期</button>
+        </div>
+        <!-- 詳細フィルター -->
+        <details id="advancedFilterDetails" class="advanced-filter-details">
+          <summary class="advanced-filter-summary">🔍 詳細フィルター</summary>
+          <div class="advanced-filter-body">
+            <label class="af-label">日付（開始）<input type="date" id="filterDateFrom" class="af-input" /></label>
+            <label class="af-label">日付（終了）<input type="date" id="filterDateTo" class="af-input" /></label>
+            <label class="af-label">信頼度（最小）
+              <input type="range" id="filterConfMin" class="af-range" min="0" max="100" value="0" />
+              <span id="filterConfMinVal">0%</span>
+            </label>
+            <button id="filterReset" class="secondary small">リセット</button>
+          </div>
+        </details>
+        <!-- ⑦ 統計ダッシュボード -->
+        <div id="statsPanel" class="stats-panel" style="display:none;">
+          <div class="stats-panel-header" id="statsToggle">
+            <span>📊 認識統計</span>
+            <span id="statsToggleIcon">▼</span>
+          </div>
+          <div id="statsBody" class="stats-body">
+            <div class="stats-summary" id="statsSummary"></div>
+            <div class="stats-charts">
+              <div class="stats-chart-block">
+                <div class="stats-chart-title">よく聴くアーティスト TOP5</div>
+                <canvas id="chartArtist" class="stats-canvas"></canvas>
+              </div>
+              <div class="stats-chart-block">
+                <div class="stats-chart-title">時間帯別の認識回数</div>
+                <canvas id="chartHour" class="stats-canvas"></canvas>
+              </div>
+              <div class="stats-chart-block stats-chart-block--full">
+                <div class="stats-chart-title">直近7日間の認識推移</div>
+                <canvas id="chartWeek" class="stats-canvas stats-canvas--wide"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="history"></div>
+      </section>
+
+      <!-- 🏆 みんなの認識ランキング（Neon クラウドデータ） -->
+      <section id="rankingSection">
+        <h3>🏆 みんなの認識ランキング</h3>
+        <!-- 累計 / 月間 タブ -->
+        <div class="ranking-tabs" role="tablist">
+          <button class="ranking-tab ranking-tab--active" data-period="all"   onclick="loadRanking('all')"   role="tab">📊 累計</button>
+          <button class="ranking-tab"                     data-period="month" onclick="loadRanking('month')" role="tab">📅 今月</button>
+        </div>
+        <!-- ランキングリスト（loadRanking() が描画） -->
+        <div id="rankingList" class="ranking-list"></div>
+      </section>
+
+      <section id="debugSection">
+        <h3>
+          🐛 デバッグログ
+          <label class="debug-toggle-label">
+            <input type="checkbox" id="debugToggle" />
+            <span>表示</span>
+          </label>
+        </h3>
+        <div id="debugPanel" style="display:none;">
+          <div class="debug-toolbar">
+            <span id="debugSummary" class="debug-summary"></span>
+            <div class="debug-toolbar-actions">
+              <button id="debugExpandAll" class="secondary small">すべて展開</button>
+              <button id="debugCollapseAll" class="secondary small">すべて折りたたむ</button>
+              <button id="debugExport" class="secondary small">📥 JSONエクスポート</button>
+              <button id="debugClear" class="secondary small">🗑 クリア</button>
+            </div>
+          </div>
+          <div id="debugEntries"></div>
+        </div>
+        <!-- 後方互換: pre#debug は非表示で残す -->
+        <pre id="debug" style="display:none"></pre>
+      </section>
+    </div>
+
+    <!-- 📥 エクスポートモーダル -->
+    <div id="exportModal" class="share-modal" role="dialog" aria-modal="true" aria-label="履歴エクスポート">
+      <div class="share-modal-inner cloud-sync-modal-inner">
+        <div class="share-modal-header">
+          <span>📥 履歴エクスポート</span>
+          <button class="shortcut-close-btn" onclick="closeExportModal()" aria-label="閉じる">✕</button>
+        </div>
+
+        <!-- 件数表示 -->
+        <div class="cloud-sync-section">
+          <div class="cloud-sync-label">📊 エクスポート対象</div>
+          <div class="export-count-row">
+            <span>全履歴: <strong id="exportCountTotal">-</strong> 件</span>
+            <span>⭐ お気に入り: <strong id="exportCountStarred">-</strong> 件</span>
+          </div>
+        </div>
+
+        <hr class="cloud-sync-divider" />
+
+        <!-- フォーマット選択 -->
+        <div class="cloud-sync-section">
+          <div class="cloud-sync-label">📄 ファイル形式</div>
+          <div class="export-fmt-group">
+            <label class="export-fmt-label">
+              <input type="radio" name="exportFmt" value="csv" checked /> CSV（Excel で開ける）
+            </label>
+            <label class="export-fmt-label">
+              <input type="radio" name="exportFmt" value="json" /> JSON（データ連携用）
+            </label>
+          </div>
+        </div>
+
+        <hr class="cloud-sync-divider" />
+
+        <!-- オプション -->
+        <div class="cloud-sync-section">
+          <div class="cloud-sync-label">⚙️ オプション</div>
+          <label class="export-fmt-label">
+            <input type="checkbox" id="exportStarredOnly" /> ⭐ お気に入りのみエクスポート
+          </label>
+        </div>
+
+        <!-- 実行ボタン -->
+        <div style="margin-top:16px; display:flex; gap:10px;">
+          <button class="cloud-sync-restore-btn" onclick="executeExport()">📥 エクスポート</button>
+          <button class="secondary small" onclick="closeExportModal()">キャンセル</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ☁️ クラウド同期モーダル -->
+    <div id="cloudSyncModal" class="share-modal" role="dialog" aria-modal="true" aria-label="クラウド同期">
+      <div class="share-modal-inner cloud-sync-modal-inner">
+        <div class="share-modal-header">
+          <span>☁️ クラウド同期</span>
+          <button class="shortcut-close-btn" onclick="closeCloudSyncModal()" aria-label="閉じる">✕</button>
+        </div>
+
+        <!-- 自分のID -->
+        <div class="cloud-sync-section">
+          <div class="cloud-sync-label">🔑 この端末の同期 ID</div>
+          <div class="cloud-sync-id-row">
+            <code id="cloudSyncModalId" class="cloud-sync-id-code"></code>
+            <button class="cloud-sync-copy-btn" id="cloudSyncCopyBtn" onclick="copyCloudUserId()">コピー</button>
+          </div>
+          <p class="cloud-sync-hint">この ID をメモしておくと、別端末でも同じ履歴を復元できます。</p>
+        </div>
+
+        <hr class="cloud-sync-divider" />
+
+        <!-- 別端末から復元 -->
+        <div class="cloud-sync-section">
+          <div class="cloud-sync-label">📲 別の端末から復元する</div>
+          <p class="cloud-sync-hint">別端末の「この端末の同期 ID」を入力して復元ボタンを押してください。</p>
+          <div class="cloud-sync-input-row">
+            <input type="text" id="cloudSyncImportId" class="cloud-sync-input"
+                   placeholder="xxxxxxxx-xxxx-4xxx-xxxx-xxxxxxxxxxxx"
+                   autocomplete="off" spellcheck="false" />
+            <button class="cloud-sync-restore-btn" id="cloudSyncRestoreBtn" onclick="restoreCloudHistoryFromInput()">復元</button>
+          </div>
+          <div id="cloudSyncStatus" class="cloud-sync-status" style="display:none;"></div>
+        </div>
+
+        <!-- 同期済み件数 -->
+        <hr class="cloud-sync-divider" />
+        <div class="cloud-sync-section">
+          <div class="cloud-sync-label">📊 同期済み件数</div>
+          <div id="cloudSyncCount" class="cloud-sync-count">読み込み中…</div>
+        </div>
+
+        <!-- 自分のランキング -->
+        <hr class="cloud-sync-divider" />
+        <div class="cloud-sync-section">
+          <div class="cloud-sync-label">🏅 自分の認識回数 TOP10</div>
+          <div id="cloudUserRankingList" class="cloud-user-ranking"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ⑧ シェアカードモーダル -->
+    <div id="shareCardModal" class="share-modal" role="dialog" aria-modal="true" aria-label="シェアカード">
+      <div class="share-modal-inner">
+        <div class="share-modal-header">
+          <span>🖼️ シェアカード</span>
+          <button class="shortcut-close-btn" onclick="closeShareCardModal()" aria-label="閉じる">✕</button>
+        </div>
+        <canvas id="shareCardCanvas" class="share-card-canvas"></canvas>
+        <div class="share-modal-actions">
+          <!-- フォーマット選択ピル -->
+          <div class="fmt-pill-group" role="group" aria-label="保存フォーマット">
+            <button class="fmt-pill fmt-pill--active" data-fmt="png"  onclick="setShareFormat(this,'png')">PNG</button>
+            <button class="fmt-pill"                  data-fmt="jpeg" onclick="setShareFormat(this,'jpeg')">JPEG</button>
+          </div>
+          <button id="shareCardDownload" class="btn-primary">💾 保存</button>
+          <button id="shareCardShare" class="btn-secondary">📤 共有</button>
+          <button class="btn-secondary" onclick="closeShareCardModal()">閉じる</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- キーボードショートカット ヘルプパネル -->
+    <div id="shortcutPanel" class="shortcut-panel" role="dialog" aria-modal="true" aria-label="キーボードショートカット">
+      <div class="shortcut-panel-inner">
+        <div class="shortcut-panel-header">
+          <span>⌨️ キーボードショートカット</span>
+          <button class="shortcut-close-btn" onclick="closeShortcutPanel()" aria-label="閉じる">✕</button>
+        </div>
+        <ul class="shortcut-list">
+          <li><kbd>R</kbd> 録音開始 / 停止</li>
+          <li><kbd>Space</kbd> YouTube 再生 / 一時停止</li>
+          <li><kbd>C</kbd> 曲情報をコピー</li>
+          <li><kbd>D</kbd> ダークモード切替</li>
+          <li><kbd>?</kbd> このパネルを表示 / 非表示</li>
+          <li><kbd>Esc</kbd> パネルを閉じる</li>
+        </ul>
+        <p class="shortcut-note">※ テキスト入力中はショートカット無効</p>
+      </div>
+    </div>
+
+    <!-- テーマ切り替えボタン -->
+    <div class="fab-group">
+      <button class="theme-toggle" onclick="toggleTheme()" title="テーマ切り替え (D)">🌙</button>
+      <button class="shortcut-fab" onclick="openShortcutPanel()" title="キーボードショートカット (?)">⌨️</button>
+      <button class="compare-fab" onclick="openComparisonModal()" title="曲情報比較" id="compareFab" style="display:none;">🔀 <span id="compareFabCount">0</span></button>
+    </div>
+
+    <!-- 曲情報比較モーダル -->
+    <div id="comparisonModal" class="share-modal" role="dialog" aria-modal="true" aria-label="曲情報比較">
+      <div class="share-modal-inner comparison-modal-inner">
+        <div class="share-modal-header">
+          <span>🎵 曲情報比較 <span id="comparisonCount" class="comparison-count">0</span>/5</span>
+          <button class="shortcut-close-btn" onclick="closeComparisonModal()" aria-label="閉じる">✕</button>
+        </div>
+        <div id="comparisonTableWrap" class="comparison-table-wrap"></div>
+        <div class="share-modal-actions">
+          <button class="btn-secondary" onclick="clearComparison()">🗑 リストをクリア</button>
+          <button class="btn-secondary" onclick="closeComparisonModal()">閉じる</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="./main.js"></script>
+    <!-- Service Worker 登録（オフライン対応） -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('[SW] 登録完了:', reg.scope))
+          .catch(err => console.warn('[SW] 登録失敗:', err));
+      }
+    </script>
+  </body>
+</html>
