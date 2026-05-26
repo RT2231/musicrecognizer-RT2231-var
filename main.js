@@ -3120,8 +3120,8 @@ function playYTVideo(videoId, videos, currentIndex) {
     currentYTPlayer = null;
   }
 
-  // プレーヤー用divをリセット
-  playerArea.innerHTML = '<div id="ytPlayerDiv"></div>';
+  // プレーヤー用divをリセット（外側ラッパー + YTが置き換える内側div）
+  playerArea.innerHTML = '<div id="ytPlayerOuter"><div id="ytPlayerDiv"></div></div>';
 
   if (typeof YT === "undefined" || typeof YT.Player === "undefined") {
     // APIロード前: _ytPendingPlay に積む（onYouTubeIframeAPIReady が受け取る）
@@ -3192,7 +3192,7 @@ function tryNextVideo(videos, failedIndex) {
 function renderYouTubeEmbed(container, videos, autoEmbed) {
   loadYouTubeAPI();
 
-  let html = `<div id="ytPlayerArea"><div id="ytPlayerDiv"></div></div>`;
+  let html = `<div id="ytPlayerArea"><div id="ytPlayerOuter"><div id="ytPlayerDiv"></div></div></div>`;
 
   // 候補リスト
   html += `<div class="yt-video-list">`;
