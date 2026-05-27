@@ -6,9 +6,28 @@
     {
       "source": "/sw.js",
       "headers": [
-        { "key": "Content-Type", "value": "application/javascript" },
+        { "key": "Content-Type",           "value": "application/javascript" },
         { "key": "Service-Worker-Allowed", "value": "/" },
-        { "key": "Cache-Control", "value": "no-cache" }
+        { "key": "Cache-Control",          "value": "no-cache" }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        { "key": "Link", "value": "</.well-known/api-catalog>; rel=\"api-catalog\", </sitemap.xml>; rel=\"sitemap\"" }
+      ]
+    },
+    {
+      "source": "/",
+      "headers": [
+        { "key": "Link", "value": "</.well-known/api-catalog>; rel=\"api-catalog\", </sitemap.xml>; rel=\"sitemap\"" }
+      ]
+    },
+    {
+      "source": "/.well-known/api-catalog",
+      "headers": [
+        { "key": "Content-Type",  "value": "application/linkset+json" },
+        { "key": "Cache-Control", "value": "public, max-age=86400" }
       ]
     },
     {

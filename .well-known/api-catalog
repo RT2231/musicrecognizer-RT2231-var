@@ -1,0 +1,19 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://acrcloud.shirokuma0822.workers.dev/",
+      "service-desc": [
+        {
+          "href": "https://musicrecognizer-rt2231-var.vercel.app/.well-known/openapi.json",
+          "type": "application/openapi+json"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://github.com/RT2231/musicrecognizer-RT2231-var#readme",
+          "type": "text/html"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# AI crawlers — indexing allowed, training not permitted
+User-agent: GPTBot
+Allow: /
+Disallow: /api/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /api/
+
+User-agent: Claude-Web
+Allow: /
+Disallow: /api/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /api/
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: FacebookBot
+Allow: /
+
+# Content usage preferences
+Content-Signal: ai-train=no, search=yes, ai-input=no
+
+Sitemap: https://musicrecognizer-rt2231-var.vercel.app/sitemap.xml
