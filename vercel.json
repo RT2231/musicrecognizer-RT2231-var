@@ -14,19 +14,33 @@
     {
       "source": "/index.html",
       "headers": [
-        { "key": "Link", "value": "</.well-known/api-catalog>; rel=\"api-catalog\", </sitemap.xml>; rel=\"sitemap\"" }
+        { "key": "Link", "value": "</.well-known/api-catalog>; rel=\"api-catalog\", </sitemap.xml>; rel=\"sitemap\", </.well-known/mcp/server-card.json>; rel=\"mcp-server-card\", </.well-known/agent-skills/index.json>; rel=\"agent-skills\"" }
       ]
     },
     {
       "source": "/",
       "headers": [
-        { "key": "Link", "value": "</.well-known/api-catalog>; rel=\"api-catalog\", </sitemap.xml>; rel=\"sitemap\"" }
+        { "key": "Link", "value": "</.well-known/api-catalog>; rel=\"api-catalog\", </sitemap.xml>; rel=\"sitemap\", </.well-known/mcp/server-card.json>; rel=\"mcp-server-card\", </.well-known/agent-skills/index.json>; rel=\"agent-skills\"" }
       ]
     },
     {
       "source": "/.well-known/api-catalog",
       "headers": [
         { "key": "Content-Type",  "value": "application/linkset+json" },
+        { "key": "Cache-Control", "value": "public, max-age=86400" }
+      ]
+    },
+    {
+      "source": "/.well-known/mcp/server-card.json",
+      "headers": [
+        { "key": "Content-Type",  "value": "application/json" },
+        { "key": "Cache-Control", "value": "public, max-age=86400" }
+      ]
+    },
+    {
+      "source": "/.well-known/agent-skills/index.json",
+      "headers": [
+        { "key": "Content-Type",  "value": "application/json" },
         { "key": "Cache-Control", "value": "public, max-age=86400" }
       ]
     },

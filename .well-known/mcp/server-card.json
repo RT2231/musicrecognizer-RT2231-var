@@ -1,0 +1,105 @@
+{
+  "$schema": "https://github.com/modelcontextprotocol/modelcontextprotocol/raw/main/schema/server-card.schema.json",
+  "serverInfo": {
+    "name": "Trackora — Music Recognition API",
+    "version": "3.2.8",
+    "description": "Cloudflare Worker that proxies ACRCloud, MusicBrainz, iTunes, YouTube, Wikipedia and Spotify for music recognition and metadata enrichment."
+  },
+  "transport": {
+    "type": "http",
+    "endpoint": "https://acrcloud.shirokuma0822.workers.dev/"
+  },
+  "capabilities": {
+    "tools": [
+      {
+        "name": "recognize_music",
+        "description": "Identify a song from an audio/video file using ACRCloud fingerprinting.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "file": { "type": "string", "format": "binary", "description": "Audio or video file (multipart/form-data key: file)" }
+          },
+          "required": ["file"]
+        },
+        "endpoint": "POST /"
+      },
+      {
+        "name": "get_musicbrainz",
+        "description": "Fetch detailed recording metadata from MusicBrainz (releases, ISRC, genres, works, URL relations).",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "title":  { "type": "string", "description": "Track title" },
+            "artist": { "type": "string", "description": "Artist name" }
+          },
+          "required": ["title", "artist"]
+        },
+        "endpoint": "POST /musicbrainz"
+      },
+      {
+        "name": "get_itunes",
+        "description": "Fetch artwork, preview URL and Apple Music link from iTunes Search API.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "title":  { "type": "string" },
+            "artist": { "type": "string" }
+          },
+          "required": ["title", "artist"]
+        },
+        "endpoint": "POST /itunes"
+      },
+      {
+        "name": "search_youtube",
+        "description": "Search YouTube for official music videos (top 3 results).",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "title":  { "type": "string" },
+            "artist": { "type": "string" }
+          },
+          "required": ["title", "artist"]
+        },
+        "endpoint": "POST /youtube"
+      },
+      {
+        "name": "get_wikipedia",
+        "description": "Fetch artist summary from Wikipedia (Japanese preferred, English fallback).",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "artist":      { "type": "string" },
+            "wikidata_id": { "type": "string", "description": "Optional Wikidata QID for precise lookup" }
+          },
+          "required": ["artist"]
+        },
+        "endpoint": "POST /wikipedia"
+      },
+      {
+        "name": "get_spotify_track",
+        "description": "Fetch Spotify track details (duration, preview URL, popularity, album art) via Client Credentials flow.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "title":    { "type": "string" },
+            "artist":   { "type": "string" },
+            "track_id": { "type": "string", "description": "Optional Spotify track ID for direct lookup" }
+          },
+          "required": ["title", "artist"]
+        },
+        "endpoint": "POST /spotify"
+      },
+      {
+        "name": "get_cloud_ranking",
+        "description": "Get global recognition count ranking (all-time or current month).",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "period": { "type": "string", "enum": ["all", "month"], "default": "all" }
+          }
+        },
+        "endpoint": "GET /cloud/ranking"
+      }
+    ]
+  }
+}

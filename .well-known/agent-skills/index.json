@@ -1,0 +1,26 @@
+{
+  "$schema": "https://agentskills.io/schema/v0.2.0/index.schema.json",
+  "skills": [
+    {
+      "name": "api-catalog",
+      "type": "api-catalog",
+      "description": "RFC 9727 API catalog listing the Cloudflare Worker endpoints for music recognition and metadata.",
+      "url": "/.well-known/api-catalog",
+      "sha256": "072802c777706f24326a9d74ae620ba62bb66ff53fb554c8dcacb31d2e4eee8f"
+    },
+    {
+      "name": "mcp-server-card",
+      "type": "mcp-server-card",
+      "description": "MCP Server Card describing all tools exposed by the Trackora Cloudflare Worker.",
+      "url": "/.well-known/mcp/server-card.json",
+      "sha256": "52d44bee30d1d1ac18d9b82a6d6e34503ba439d709ab6e832049c07423db84de"
+    },
+    {
+      "name": "robots-txt",
+      "type": "robots-txt",
+      "description": "robots.txt with AI crawler rules and Content-Signal directives.",
+      "url": "/robots.txt",
+      "sha256": "93b2444b7453737550fbaf9ff50f90aa85e34c345d51da2dd15c10f320cc6930"
+    }
+  ]
+}
