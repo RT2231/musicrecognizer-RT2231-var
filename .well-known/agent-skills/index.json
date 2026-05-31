@@ -4,9 +4,16 @@
     {
       "name": "api-catalog",
       "type": "api-catalog",
-      "description": "RFC 9727 API catalog listing the Cloudflare Worker endpoints for music recognition and metadata.",
+      "description": "RFC 9727 API catalog with OpenAPI spec reference for the Trackora Cloudflare Worker.",
       "url": "/.well-known/api-catalog",
-      "sha256": "072802c777706f24326a9d74ae620ba62bb66ff53fb554c8dcacb31d2e4eee8f"
+      "sha256": "07098b1cbbadf206d2120c2cbf4f5f1f5b990901e4e1ad56caa0c81c1833977e"
+    },
+    {
+      "name": "openapi",
+      "type": "openapi",
+      "description": "OpenAPI 3.0 specification for all Trackora Worker endpoints.",
+      "url": "/openapi.json",
+      "sha256": "e6143ba2926a46861fee5c96f723763ca78a90e1f919205fcf614b8492dbc870"
     },
     {
       "name": "mcp-server-card",
@@ -18,9 +25,9 @@
     {
       "name": "robots-txt",
       "type": "robots-txt",
-      "description": "robots.txt with AI crawler rules and Content-Signal directives.",
+      "description": "robots.txt with explicit rules for AI and search crawlers, and Content-Signal directives.",
       "url": "/robots.txt",
-      "sha256": "93b2444b7453737550fbaf9ff50f90aa85e34c345d51da2dd15c10f320cc6930"
+      "sha256": "fa55d0bfc5a6599514525c943c2c9a6326bae107fed7ee9458a6b72fce0a90be"
     }
   ]
 }

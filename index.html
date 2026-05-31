@@ -23,6 +23,47 @@
       window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
     </script>
     <script defer src="/_vercel/speed-insights/script.js"></script>
+
+    <!-- JSON-LD 構造化データ -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Trackora",
+      "alternateName": "音楽認識ツール",
+      "description": "ブラウザだけで完結する楽曲識別 Web アプリ。音声ファイルのアップロードまたはマイク録音で曲名・アーティストを即座に特定します。",
+      "url": "https://musicrecognizer-rt2231-var.vercel.app/",
+      "applicationCategory": "MusicApplication",
+      "operatingSystem": "All",
+      "browserRequirements": "Requires a modern browser with Web Audio API support",
+      "inLanguage": "ja",
+      "isAccessibleForFree": true,
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "JPY"
+      },
+      "featureList": [
+        "Music recognition via ACRCloud fingerprinting",
+        "MusicBrainz metadata (ISRC, genres, composers)",
+        "YouTube MV embedded player",
+        "Spotify embed player and playlist integration",
+        "iTunes 30-second preview",
+        "Wikipedia artist summary",
+        "Cloud sync across devices via Cloudflare D1",
+        "Offline support via Service Worker",
+        "Recognition history with statistics dashboard",
+        "Dark mode and keyboard shortcuts"
+      ],
+      "author": {
+        "@type": "Person",
+        "name": "RT2231"
+      },
+      "codeRepository": "https://github.com/RT2231/musicrecognizer-RT2231-var",
+      "license": "https://github.com/RT2231/musicrecognizer-RT2231-var/blob/main/LICENSE.md",
+      "softwareVersion": "3.2.8"
+    }
+    </script>
   </head>
 
   <body>

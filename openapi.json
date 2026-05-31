@@ -1,0 +1,639 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Trackora Music Recognition API",
+    "description": "Cloudflare Worker that proxies ACRCloud fingerprinting and enriches results with MusicBrainz, iTunes, YouTube, Wikipedia and Spotify metadata.",
+    "version": "3.2.8",
+    "contact": {
+      "url": "https://github.com/RT2231/musicrecognizer-RT2231-var"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://github.com/RT2231/musicrecognizer-RT2231-var/blob/main/LICENSE.md"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://acrcloud.shirokuma0822.workers.dev",
+      "description": "Cloudflare Worker (production)"
+    }
+  ],
+  "tags": [
+    { "name": "recognition", "description": "Music fingerprinting via ACRCloud" },
+    { "name": "metadata",    "description": "Track metadata from third-party sources" },
+    { "name": "cloud",       "description": "Cloud sync and ranking via Cloudflare D1" },
+    { "name": "spotify",     "description": "Spotify Web API integration" }
+  ],
+  "paths": {
+    "/": {
+      "post": {
+        "tags": ["recognition"],
+        "summary": "Recognize music from audio",
+        "description": "Submit an audio or video file for ACRCloud fingerprint recognition. Returns up to 5 ranked candidates with Spotify, Deezer and YouTube metadata.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Audio or video file (WAV recommended, max ~900 KB)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Recognition result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RecognitionResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/musicbrainz": {
+      "post": {
+        "tags": ["metadata"],
+        "summary": "Fetch MusicBrainz recording metadata",
+        "description": "Search MusicBrainz for a recording and return detailed metadata including releases, ISRC codes, genres, works, composers and external URL relations.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TitleArtistRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "MusicBrainz recording data",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MusicBrainzResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/itunes": {
+      "post": {
+        "tags": ["metadata"],
+        "summary": "Fetch iTunes / Apple Music metadata",
+        "description": "Search the iTunes Search API for artwork (up to 1200px), 30-second preview URL and Apple Music direct link.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TitleArtistRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "iTunes metadata",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ITunesResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/youtube": {
+      "post": {
+        "tags": ["metadata"],
+        "summary": "Search YouTube for music videos",
+        "description": "Search YouTube Data API v3 for official music videos. Returns up to 3 results with video ID, title, channel and thumbnail.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TitleArtistRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "YouTube video results",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/YouTubeResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/wikipedia": {
+      "post": {
+        "tags": ["metadata"],
+        "summary": "Fetch Wikipedia artist summary",
+        "description": "Resolve artist page via Wikidata ID (if provided) then fetch Wikipedia summary. Prefers Japanese, falls back to English.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["artist"],
+                "properties": {
+                  "artist":      { "type": "string", "example": "Hikaru Utada" },
+                  "wikidata_id": { "type": "string", "example": "Q234829", "description": "Optional Wikidata QID for precise lookup" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Wikipedia summary",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WikipediaResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spotify": {
+      "post": {
+        "tags": ["spotify"],
+        "summary": "Fetch Spotify track details",
+        "description": "Retrieve track details (duration, preview URL, popularity, album art) using Spotify Client Credentials flow. Uses track_id for direct lookup if provided, otherwise searches by title and artist.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title", "artist"],
+                "properties": {
+                  "title":    { "type": "string" },
+                  "artist":   { "type": "string" },
+                  "track_id": { "type": "string", "description": "Spotify track ID for direct lookup" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Spotify track data",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SpotifyTrackResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spotify/auth": {
+      "get": {
+        "tags": ["spotify"],
+        "summary": "Get Spotify OAuth authorization URL",
+        "description": "Returns a Spotify OAuth 2.0 authorization URL for user-delegated access (playlist modification).",
+        "parameters": [
+          {
+            "name": "redirect_uri",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "uri" },
+            "description": "Callback URL after authorization"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorization URL and state token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success":  { "type": "boolean" },
+                    "auth_url": { "type": "string", "format": "uri" },
+                    "state":    { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spotify/callback": {
+      "post": {
+        "tags": ["spotify"],
+        "summary": "Exchange authorization code for access token",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["code", "redirect_uri"],
+                "properties": {
+                  "code":         { "type": "string" },
+                  "redirect_uri": { "type": "string", "format": "uri" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success":      { "type": "boolean" },
+                    "access_token": { "type": "string" },
+                    "expires_in":   { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spotify/playlist/add": {
+      "post": {
+        "tags": ["spotify"],
+        "summary": "Add track to Spotify playlist",
+        "description": "Add a track to the user's '音楽認識ツール' playlist. Creates the playlist if it does not exist.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["access_token", "title", "artist"],
+                "properties": {
+                  "access_token": { "type": "string" },
+                  "title":        { "type": "string" },
+                  "artist":       { "type": "string" },
+                  "track_uri":    { "type": "string", "description": "Spotify track URI (optional)" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Playlist update result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success":     { "type": "boolean" },
+                    "playlist_id": { "type": "string" },
+                    "snapshot_id": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cloud/sync": {
+      "post": {
+        "tags": ["cloud"],
+        "summary": "Save recognition to Cloudflare D1",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CloudSyncRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved record ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "id":      { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cloud/history": {
+      "post": {
+        "tags": ["cloud"],
+        "summary": "Fetch user recognition history",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["user_id"],
+                "properties": {
+                  "user_id": { "type": "string", "format": "uuid" },
+                  "limit":   { "type": "integer", "default": 200 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "History records",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "history": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/HistoryRecord" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cloud/ranking": {
+      "get": {
+        "tags": ["cloud"],
+        "summary": "Get global recognition ranking",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["all", "month"], "default": "all" },
+            "description": "Ranking period"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Top 20 tracks by recognition count",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "ranking": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "title":  { "type": "string" },
+                          "artist": { "type": "string" },
+                          "count":  { "type": "integer" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cloud/ranking/user": {
+      "post": {
+        "tags": ["cloud"],
+        "summary": "Get user's personal TOP 10",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["user_id"],
+                "properties": {
+                  "user_id": { "type": "string", "format": "uuid" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User's top 10 tracks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "ranking": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "title":  { "type": "string" },
+                          "artist": { "type": "string" },
+                          "count":  { "type": "integer" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "TitleArtistRequest": {
+        "type": "object",
+        "required": ["title", "artist"],
+        "properties": {
+          "title":  { "type": "string", "example": "First Love" },
+          "artist": { "type": "string", "example": "Hikaru Utada" }
+        }
+      },
+      "RecognitionResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "acr": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "object",
+                "properties": {
+                  "code": { "type": "integer" },
+                  "msg":  { "type": "string" }
+                }
+              },
+              "metadata": {
+                "type": "object",
+                "properties": {
+                  "music": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "title":             { "type": "string" },
+                        "score":             { "type": "number" },
+                        "artists":           { "type": "array", "items": { "type": "object" } },
+                        "album":             { "type": "object" },
+                        "release_date":      { "type": "string" },
+                        "genres":            { "type": "array", "items": { "type": "object" } },
+                        "external_ids":      { "type": "object" },
+                        "external_metadata": { "type": "object" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "MusicBrainzResponse": {
+        "type": "object",
+        "properties": {
+          "success":   { "type": "boolean" },
+          "recording": {
+            "type": "object",
+            "properties": {
+              "id":           { "type": "string", "format": "uuid" },
+              "title":        { "type": "string" },
+              "artist":       { "type": "string" },
+              "duration":     { "type": "integer", "description": "Duration in milliseconds" },
+              "isrcs":        { "type": "array", "items": { "type": "string" } },
+              "genres":       { "type": "array", "items": { "type": "object" } },
+              "tags":         { "type": "array", "items": { "type": "object" } },
+              "releases":     { "type": "array", "items": { "type": "object" } },
+              "works":        { "type": "array", "items": { "type": "object" } },
+              "youtube_url":  { "type": "string", "format": "uri", "nullable": true },
+              "wikidata_id":  { "type": "string", "nullable": true }
+            }
+          }
+        }
+      },
+      "ITunesResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "bestMatch": {
+            "type": "object",
+            "properties": {
+              "trackName":     { "type": "string" },
+              "artistName":    { "type": "string" },
+              "artworkUrl600": { "type": "string", "format": "uri" },
+              "artworkUrl1200":{ "type": "string", "format": "uri" },
+              "previewUrl":    { "type": "string", "format": "uri" },
+              "trackViewUrl":  { "type": "string", "format": "uri" }
+            }
+          }
+        }
+      },
+      "YouTubeResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "videos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "videoId":     { "type": "string" },
+                "title":       { "type": "string" },
+                "channel":     { "type": "string" },
+                "thumbnail":   { "type": "string", "format": "uri" },
+                "publishedAt": { "type": "string", "format": "date-time" }
+              }
+            }
+          }
+        }
+      },
+      "WikipediaResponse": {
+        "type": "object",
+        "properties": {
+          "success":   { "type": "boolean" },
+          "title":     { "type": "string" },
+          "summary":   { "type": "string" },
+          "url":       { "type": "string", "format": "uri" },
+          "language":  { "type": "string", "enum": ["ja", "en"] },
+          "thumbnail": { "type": "string", "format": "uri", "nullable": true }
+        }
+      },
+      "SpotifyTrackResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "track": {
+            "type": "object",
+            "properties": {
+              "id":           { "type": "string" },
+              "name":         { "type": "string" },
+              "duration_ms":  { "type": "integer" },
+              "preview_url":  { "type": "string", "format": "uri", "nullable": true },
+              "popularity":   { "type": "integer", "minimum": 0, "maximum": 100 },
+              "external_urls":{ "type": "object" },
+              "artists":      { "type": "array", "items": { "type": "object" } },
+              "album":        { "type": "object" }
+            }
+          }
+        }
+      },
+      "CloudSyncRequest": {
+        "type": "object",
+        "required": ["user_id", "title", "artist"],
+        "properties": {
+          "user_id":       { "type": "string", "format": "uuid" },
+          "title":         { "type": "string" },
+          "artist":        { "type": "string" },
+          "album":         { "type": "string" },
+          "genre":         { "type": "string" },
+          "isrc":          { "type": "string" },
+          "confidence":    { "type": "integer", "minimum": 0, "maximum": 100 },
+          "recognized_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "HistoryRecord": {
+        "type": "object",
+        "properties": {
+          "id":            { "type": "integer" },
+          "user_id":       { "type": "string", "format": "uuid" },
+          "title":         { "type": "string" },
+          "artist":        { "type": "string" },
+          "album":         { "type": "string" },
+          "genre":         { "type": "string" },
+          "isrc":          { "type": "string" },
+          "confidence":    { "type": "integer" },
+          "recognized_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

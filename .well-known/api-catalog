@@ -4,14 +4,30 @@
       "anchor": "https://acrcloud.shirokuma0822.workers.dev/",
       "service-desc": [
         {
-          "href": "https://musicrecognizer-rt2231-var.vercel.app/.well-known/openapi.json",
-          "type": "application/openapi+json"
+          "href": "https://musicrecognizer-rt2231-var.vercel.app/openapi.json",
+          "type": "application/openapi+json",
+          "title": "Trackora API — OpenAPI 3.0 Specification"
         }
       ],
       "service-doc": [
         {
           "href": "https://github.com/RT2231/musicrecognizer-RT2231-var#readme",
-          "type": "text/html"
+          "type": "text/html",
+          "title": "Trackora README"
+        }
+      ],
+      "status": [
+        {
+          "href": "https://acrcloud.shirokuma0822.workers.dev/cloud/ranking",
+          "type": "application/json",
+          "title": "API health check (returns ranking JSON)"
+        }
+      ],
+      "describedby": [
+        {
+          "href": "https://musicrecognizer-rt2231-var.vercel.app/.well-known/mcp/server-card.json",
+          "type": "application/json",
+          "title": "MCP Server Card"
         }
       ]
     }

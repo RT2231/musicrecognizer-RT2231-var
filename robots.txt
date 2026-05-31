@@ -1,8 +1,48 @@
+# =====================================================
+# Trackora — Music Recognition Tool
+# robots.txt
+# =====================================================
+
+# --- デフォルト（すべてのクローラー）---
 User-agent: *
 Allow: /
 Disallow: /api/
 
-# AI crawlers — indexing allowed, training not permitted
+# --- 検索エンジン ---
+User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: YandexBot
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+# --- AI 検索・エージェント（インデックス許可・学習不可）---
 User-agent: GPTBot
 Allow: /
 Disallow: /api/
@@ -15,17 +55,47 @@ User-agent: Claude-Web
 Allow: /
 Disallow: /api/
 
+User-agent: ClaudeBot
+Allow: /
+Disallow: /api/
+
+User-agent: anthropic-ai
+Allow: /
+Disallow: /api/
+
 User-agent: Google-Extended
 Allow: /
 Disallow: /api/
 
-User-agent: CCBot
-Disallow: /
+User-agent: PerplexityBot
+Allow: /
+Disallow: /api/
 
-User-agent: FacebookBot
+User-agent: YouBot
+Allow: /
+Disallow: /api/
+
+User-agent: cohere-ai
+Allow: /
+Disallow: /api/
+
+# --- AI 学習専用クローラー（ブロック）---
+User-agent: CCBot
 Allow: /
 
-# Content usage preferences
-Content-Signal: ai-train=no, search=yes, ai-input=no
+User-agent: Diffbot
+Disallow: /
+
+User-agent: Omgilibot
+Disallow: /
+
+User-agent: Omgili
+Disallow: /
+
+# --- コンテンツ利用ポリシー ---
+# search=yes     : 検索インデックス利用 OK
+# ai-train=no    : AI 学習データへの利用 NG
+# ai-input=yes   : AI の回答生成への入力利用 OK
+Content-Signal: ai-train=no, search=yes, ai-input=yes
 
 Sitemap: https://musicrecognizer-rt2231-var.vercel.app/sitemap.xml
