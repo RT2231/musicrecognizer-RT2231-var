@@ -1,0 +1,35 @@
+{
+  "name": "Trackora",
+  "short_name": "Trackora",
+  "description": "ブラウザだけで完結する楽曲識別アプリ。音声ファイルをアップロードするか、マイクで録音するだけで曲を特定。",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#12131a",
+  "theme_color": "#4f46e5",
+  "lang": "ja",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["music", "entertainment", "utilities"],
+  "screenshots": [
+    {
+      "src": "/favicon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ]
+}

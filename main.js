@@ -26,7 +26,7 @@ window.addEventListener('unhandledrejection', function(e) {
 
 /* ========= 設定 ========= */
 const WORKER_URL = "https://acrcloud.shirokuma0822.workers.dev/";
-const APP_VERSION = "3.2.8";
+const APP_VERSION = "3.3.0";
 
 /* ========= クラウド同期 設定 ========= */
 /**
@@ -2461,7 +2461,7 @@ async function generateShareCard(canvas, { title, artist, album, artSrc, release
   ctx.font      = '12px system-ui, sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,.42)';
   ctx.textAlign = 'left';
-  ctx.fillText(`🎵 音楽認識ツール`, PAD, H - 18);
+  ctx.fillText(`🎵 Trackora`, PAD, H - 18);
   ctx.textAlign = 'right';
   ctx.fillText(`v${APP_VERSION}  ${new Date().toLocaleDateString('ja-JP')}`, W - PAD, H - 18);
 }
@@ -3677,6 +3677,87 @@ function closeComparisonModal() {
   if (modal) modal.classList.remove("is-open");
 }
 
+/* ========= Spotify プレイリスト表示 ========= */
+
+/**
+ * 「Trackora」プレイリストを取得して表示する。
+ * トークンがなければ OAuth フローを起動する。
+ */
+async function loadSpotifyPlaylist() {
+  const section  = document.getElementById("spotifyPlaylistSection");
+  const content  = document.getElementById("spotifyPlaylistContent");
+  if (!section || !content) return;
+
+  section.style.display = "block";
+
+  let token = getSpotifyToken();
+  if (!token) {
+    await startSpotifyAuth();
+    token = getSpotifyToken();
+    if (!token) return;
+  }
+
+  content.innerHTML = `<div class="spotify-pl-loading"><span class="loading-spinner"></span> プレイリストを読み込み中...</div>`;
+
+  try {
+    const res  = await fetch(`${WORKER_URL}spotify/playlist`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ access_token: token })
+    });
+    const json = await res.json();
+
+    if (!json.success) throw new Error(json.error);
+
+    if (!json.tracks || json.tracks.length === 0) {
+      content.innerHTML = `
+        <div class="spotify-pl-empty">
+          <p>「Trackora」プレイリストにまだ曲がありません。</p>
+          <p>認識結果の「🎵 プレイリストに追加」ボタンで追加できます。</p>
+        </div>`;
+      return;
+    }
+
+    const headerHtml = `
+      <div class="spotify-pl-header">
+        <span class="spotify-pl-count">${json.total} 曲</span>
+        ${json.playlist_url ? `<a href="${escapeHtml(json.playlist_url)}" target="_blank" class="spotify-open-link">Spotify で開く ↗</a>` : ''}
+      </div>`;
+
+    const tracksHtml = json.tracks.map((t, i) => {
+      const duration = t.duration_ms
+        ? `${Math.floor(t.duration_ms / 60000)}:${String(Math.floor((t.duration_ms % 60000) / 1000)).padStart(2, "0")}`
+        : "";
+      return `
+        <div class="spotify-pl-item" onclick="embedSpotifyTrack('${escapeHtml(t.id)}')">
+          ${t.artwork
+            ? `<img class="spotify-pl-art" src="${escapeHtml(t.artwork)}" alt="art" loading="lazy">`
+            : `<div class="spotify-pl-art spotify-pl-art--empty">🎵</div>`}
+          <div class="spotify-pl-info">
+            <div class="spotify-pl-title">${escapeHtml(t.name)}</div>
+            <div class="spotify-pl-artist">${escapeHtml(t.artist)}</div>
+          </div>
+          <span class="spotify-pl-duration">${duration}</span>
+          <span class="spotify-pl-play">▶</span>
+        </div>`;
+    }).join("");
+
+    content.innerHTML = headerHtml + `<div class="spotify-pl-list">${tracksHtml}</div>`;
+
+  } catch (err) {
+    content.innerHTML = `<div class="spotify-pl-empty">読み込みに失敗しました: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+/** プレイリストから曲を選んで Spotify embed に表示する。 */
+function embedSpotifyTrack(trackId) {
+  if (!trackId) return;
+  const prevSection = document.getElementById("previewSection");
+  if (prevSection) prevSection.style.display = "block";
+  showSpotifyEmbed(trackId);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
 /* ========= Spotify プレイリスト連携 ========= */
 /**
  * localStorage に保存された Spotify アクセストークンを返す。
@@ -3717,7 +3798,7 @@ async function startSpotifyAuth() {
 }
 
 /**
- * 現在認識中の楽曲を Spotify プレイリスト「音楽認識ツール」に追加する。
+ * 現在認識中の楽曲を Spotify プレイリスト「Trackora」に追加する。
  * 未ログインの場合は OAuth フローを開始する。
  * @param {string} title
  * @param {string} artist
@@ -3917,6 +3998,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // タブがアクティブに戻ったときだけ同期
     document.addEventListener("visibilitychange", () => { if (!document.hidden) autoSyncFromCloud(); });
     // 最終同期日時を復元
+    // Spotify ログイン済みならプレイリストセクションを表示
+    if (getSpotifyToken()) {
+      const plSection = document.getElementById("spotifyPlaylistSection");
+      if (plSection) plSection.style.display = "block";
+      loadSpotifyPlaylist();
+    }
     _restoreLastSyncTime();
 
     // ⭐ お気に入りフィルターボタン
@@ -3977,6 +4064,8 @@ document.addEventListener('DOMContentLoaded', function() {
     window.closeComparisonModal         = closeComparisonModal;
     window.addToSpotifyPlaylist         = addToSpotifyPlaylist;
     window.startSpotifyAuth             = startSpotifyAuth;
+    window.loadSpotifyPlaylist          = loadSpotifyPlaylist;
+    window.embedSpotifyTrack            = embedSpotifyTrack;
     window.openExportModal              = openExportModal;
     window.closeExportModal             = closeExportModal;
     window.executeExport                = executeExport;

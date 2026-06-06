@@ -1,5 +1,5 @@
 /**
- * Service Worker — 音楽認識ツール v3.2.8
+ * Service Worker — 音楽認識ツール v3.3.0
  *
  * キャッシュ戦略:
  *   - Shell（HTML / CSS / JS）: Cache First → オフラインでも起動可能
@@ -9,7 +9,7 @@
  * キャッシュ名にバージョンを含める。デプロイ時にバージョンを上げれば古いキャッシュを自動削除。
  */
 
-const CACHE_VERSION = "v3.2.8";
+const CACHE_VERSION = "v3.3.0";
 const SHELL_CACHE   = `shell-${CACHE_VERSION}`;
 const ASSET_CACHE   = `assets-${CACHE_VERSION}`;
 
@@ -21,6 +21,7 @@ const SHELL_FILES = [
   "./main.js",
   "./spotify-callback.html",
   "./favicon.png",
+  "./manifest.json",
 ];
 
 /** キャッシュしないパターン（外部 API・Worker） */
