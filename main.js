@@ -2820,7 +2820,7 @@ async function fetchItunesArtwork(title, artist) {
     if (!json.success || !json.bestMatch) return null;
 
     const match = json.bestMatch;
-    return {
+    const result = {
       url100: match.artworkUrl100,
       url600: match.artworkUrl600,
       url1200: match.artworkUrl1200,
