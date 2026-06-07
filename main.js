@@ -3142,9 +3142,8 @@ function playYTVideo(videoId, videos, currentIndex) {
       rel:            0,
       modestbranding: 1,
       autoplay:       1,
-      mute:           1,   // Autoplay Policy 対策（ミュートなら自動再生可）
-      playsinline:    1,
-      origin:         window.location.origin
+      mute:           1,
+      playsinline:    1
     },
     events: {
       onReady: function(e) {
