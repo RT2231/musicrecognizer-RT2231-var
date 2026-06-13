@@ -26,6 +26,8 @@ window.addEventListener('unhandledrejection', function(e) {
 
 /* ========= 設定 ========= */
 const WORKER_URL = "https://acrcloud.shirokuma0822.workers.dev/";
+// spotify-callback.html がポップアップオープナーとして参照するため window に公開
+window.WORKER_URL = WORKER_URL;
 const APP_VERSION = "3.3.0";
 
 /* ========= クラウド同期 設定 ========= */
@@ -3200,7 +3202,7 @@ function renderYouTubeEmbed(container, videos, autoEmbed) {
       <div class="yt-video-item ${i === 0 ? 'yt-video-item--active' : ''}"
            data-video-id="${escapeHtml(v.videoId)}"
            data-index="${i}"
-           onclick="embedYouTubeVideo('${escapeHtml(v.videoId)}', ${i}, this)">
+           onclick="embedYouTubeVideo('${escapeHtml(v.videoId).replace(/'/g,"\\'")}', ${i}, this)">
         <img class="yt-thumbnail" src="${escapeHtml(v.thumbnail)}" alt="thumbnail" loading="lazy"
              onerror="this.src='https://img.youtube.com/vi/${escapeHtml(v.videoId)}/mqdefault.jpg'">
         <div class="yt-video-info">
@@ -3728,7 +3730,7 @@ async function loadSpotifyPlaylist() {
         ? `${Math.floor(t.duration_ms / 60000)}:${String(Math.floor((t.duration_ms % 60000) / 1000)).padStart(2, "0")}`
         : "";
       return `
-        <div class="spotify-pl-item" onclick="embedSpotifyTrack('${escapeHtml(t.id)}')">
+        <div class="spotify-pl-item" onclick="embedSpotifyTrack('${escapeHtml(t.id).replace(/'/g,"\\'")}')">
           ${t.artwork
             ? `<img class="spotify-pl-art" src="${escapeHtml(t.artwork)}" alt="art" loading="lazy">`
             : `<div class="spotify-pl-art spotify-pl-art--empty">🎵</div>`}
