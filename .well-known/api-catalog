@@ -1,6 +1,16 @@
 {
   "linkset": [
     {
+      "anchor": "https://musicrecognizer-rt2231-var.vercel.app/",
+      "status": [
+        {
+          "href": "https://trackora.instatus.com",
+          "type": "text/html",
+          "title": "Trackora Status Page"
+        }
+      ]
+    },
+    {
       "anchor": "https://acrcloud.shirokuma0822.workers.dev/",
       "service-desc": [
         {
@@ -17,6 +27,11 @@
         }
       ],
       "status": [
+        {
+          "href": "https://trackora.instatus.com",
+          "type": "text/html",
+          "title": "Trackora Status Page"
+        },
         {
           "href": "https://acrcloud.shirokuma0822.workers.dev/cloud/ranking",
           "type": "application/json",

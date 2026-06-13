@@ -3033,3 +3033,21 @@ body.dark .export-fmt-note  { color: #6b7280; }
   color: var(--txt-muted); font-size: 14px;
 }
 .spotify-playlist-login p { margin: 0 0 12px; }
+
+/* ===== Instatus ステータスバッジ ===== */
+.status-badge-link {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  line-height: 0;
+  flex-shrink: 0;
+}
+.status-badge-link iframe {
+  display: block;
+  pointer-events: none; /* クリックはリンク全体に委譲 */
+}
+@media (max-width: 680px) {
+  .status-badge-link { display: none; } /* モバイルではタイトルとの兼ね合いで非表示 */
+}
