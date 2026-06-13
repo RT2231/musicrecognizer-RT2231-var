@@ -3991,13 +3991,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // 統計パネル初期化
     initStatsPanel();
 
-    // クラウド自動同期（バックグラウンド時はスキップ）
-    const _doSync = () => { if (!document.hidden) autoSyncFromCloud(); };
-    setTimeout(_doSync, 2000);
-    // 5分おきの定期自動同期
-    setInterval(_doSync, 5 * 60 * 1000);
-    // タブがアクティブに戻ったときだけ同期
-    document.addEventListener("visibilitychange", () => { if (!document.hidden) autoSyncFromCloud(); });
     // 最終同期日時を復元
     // Spotify ログイン済みならプレイリストセクションを表示
     if (getSpotifyToken()) {
@@ -4042,11 +4035,51 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
 
-    // IndexedDBを初期化
-    initIndexedDB();
-
     // ランキング初期読み込み（ページ表示後に非同期で取得）
     loadRanking("all");
+
+    // =====================================================
+    // Cookiebot 同意ゲート
+    // IndexedDB・クラウド同期・cloud_user_id の生成は
+    // ユーザーが統計/設定 Cookie に同意してから実行する。
+    // Cookiebot がブロックされている場合（Firefox ETP 等）は
+    // 3 秒後にフォールバックして初期化する。
+    // =====================================================
+    function _initConsentFeatures() {
+      // 二重実行防止
+      if (window._consentFeaturesInitialized) return;
+      window._consentFeaturesInitialized = true;
+
+      // IndexedDB 初期化（完了後に履歴ロード・クラウド同期が走る）
+      initIndexedDB();
+
+      // クラウド自動同期（バックグラウンド時はスキップ）
+      const _doSync = () => { if (!document.hidden) autoSyncFromCloud(); };
+      setTimeout(_doSync, 2000);
+      setInterval(_doSync, 5 * 60 * 1000);
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) autoSyncFromCloud(); });
+    }
+
+    // Cookiebot が同意を更新したとき（新規同意 / 設定変更）
+    window.addEventListener("CookiebotOnAccept", function() {
+      if (window.Cookiebot?.consent?.statistics || window.Cookiebot?.consent?.preferences) {
+        _initConsentFeatures();
+      }
+    });
+
+    // ページ読み込み時に既に同意済みだった場合
+    window.addEventListener("CookiebotOnConsentReady", function() {
+      if (window.Cookiebot?.consent?.statistics || window.Cookiebot?.consent?.preferences) {
+        _initConsentFeatures();
+      }
+    });
+
+    // フォールバック: Cookiebot がブロックされている / 未導入の環境では 3 秒後に初期化
+    setTimeout(function() {
+      if (!window._consentFeaturesInitialized) {
+        _initConsentFeatures();
+      }
+    }, 3000);
 
     // クラウド同期・復元をグローバルに公開
     window.restoreCloudHistoryFromInput = restoreCloudHistoryFromInput;
