@@ -374,7 +374,12 @@ const MIN_BYTES      = 2000;
 
 async function preprocessAudio(file) {
   // 1. ファイル種別チェック
-  if (!file.type.startsWith('audio/') && !file.type.startsWith('video/')) {
+  // iOS Safari は MIME タイプを空文字で返すことがあるため、
+  // type が空の場合は拡張子でフォールバック判定する
+  const AUDIO_EXTS = /\.(mp3|m4a|aac|wav|ogg|flac|opus|wma|mp4|m4v|mov|avi|webm|3gp)$/i;
+  const typeOk = file.type.startsWith('audio/') || file.type.startsWith('video/');
+  const extOk  = AUDIO_EXTS.test(file.name);
+  if (!typeOk && !extOk) {
     throw new Error('音声・動画ファイルを選択してください');
   }
   debugLog("前処理: ファイル受信", { name: file.name, size_bytes: file.size, size_kb: (file.size/1024).toFixed(1), type: file.type, last_modified: new Date(file.lastModified).toISOString() });
@@ -382,8 +387,10 @@ async function preprocessAudio(file) {
   // 2. 極小ファイルチェック
   if (file.size < MIN_BYTES) throw new Error('音声が短すぎます');
 
-  // 小さいファイル（<500KB）かつWAV/MP3ならそのまま送る
-  if (file.size < 500_000 && (file.type === 'audio/wav' || file.type === 'audio/mpeg' || file.type === 'audio/mp3')) {
+  // 小さいファイル（<500KB）かつ音声系ならそのまま送る（iOSのMIMEタイプも考慮）
+  const PASSTHROUGH_TYPES = ['audio/wav','audio/mpeg','audio/mp3','audio/mp4','audio/x-m4a','audio/aac','audio/m4a'];
+  const PASSTHROUGH_EXTS  = /\.(wav|mp3|m4a|aac)$/i;
+  if (file.size < 500_000 && (PASSTHROUGH_TYPES.includes(file.type) || PASSTHROUGH_EXTS.test(file.name))) {
     debugLog("前処理: 小ファイル — 前処理スキップ", { size_bytes: file.size, size_kb: (file.size/1024).toFixed(1), reason: "500KB未満のWAV/MP3はそのまま送信" });
     return file;
   }
