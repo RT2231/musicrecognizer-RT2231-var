@@ -1610,7 +1610,7 @@ async function loadRanking(period = "all") {
     if (!json.success) throw new Error(json.error);
     renderRanking(json.ranking, period);
   } catch (err) {
-    list.innerHTML = `<div class="ranking-error">ランキングを読み込めませんでした<br><small>${err.message}</small></div>`;
+    list.innerHTML = `<div class="ranking-error">ランキングを読み込めませんでした<br><small>${escapeHtml(String(err.message ?? err))}</small></div>`;
   }
 }
 
@@ -3521,9 +3521,12 @@ async function downloadArt(url, filename) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const blob = await res.blob();
     const blobUrl = URL.createObjectURL(blob);
+    // blob: URL であることを確認（Snyk DOM XSS 対策）
+    if (!blobUrl.startsWith('blob:')) throw new Error('Invalid blob URL');
+    const safeFilename = filename.replace(/[^a-zA-Z0-9_\-]/g, '_');
     const a = document.createElement('a');
     a.href     = blobUrl;
-    a.download = `${filename}_cover.jpg`;
+    a.download = `${safeFilename}_cover.jpg`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -3726,10 +3729,15 @@ async function loadSpotifyPlaylist() {
       return;
     }
 
+    // playlist_url は Spotify ドメインのみ許可
+    const safePlUrl = (json.playlist_url && /^https:\/\/open\.spotify\.com\//.test(json.playlist_url))
+      ? json.playlist_url : null;
+    const safeTotal = parseInt(json.total, 10) || 0;
+
     const headerHtml = `
       <div class="spotify-pl-header">
-        <span class="spotify-pl-count">${json.total} 曲</span>
-        ${json.playlist_url ? `<a href="${escapeHtml(json.playlist_url)}" target="_blank" class="spotify-open-link">Spotify で開く ↗</a>` : ''}
+        <span class="spotify-pl-count">${safeTotal} 曲</span>
+        ${safePlUrl ? `<a href="${escapeHtml(safePlUrl)}" target="_blank" rel="noopener" class="spotify-open-link">Spotify で開く ↗</a>` : ''}
       </div>`;
 
     const tracksHtml = json.tracks.map((t, i) => {
@@ -3789,6 +3797,10 @@ async function startSpotifyAuth() {
     const res  = await fetch(`${WORKER_URL}spotify/auth?redirect_uri=${encodeURIComponent(redirectUri)}`);
     const json = await res.json();
     if (!json.success) throw new Error(json.error);
+    // auth_url は Spotify の認可エンドポイントのみ許可（オープンリダイレクト対策）
+    if (!json.auth_url || !/^https:\/\/accounts\.spotify\.com\/authorize/.test(json.auth_url)) {
+      throw new Error('Invalid auth URL');
+    }
     localStorage.setItem("spotify_auth_state", json.state);
     const popup = window.open(json.auth_url, "spotify_auth", "width=480,height=640");
     // ポップアップが閉じたら状態チェック
@@ -4118,7 +4130,7 @@ document.addEventListener('DOMContentLoaded', function() {
       resultArea.innerHTML = `
         <div class="card" style="background:#fee2e2;color:#991b1b;padding:14px;">
           <b>初期化エラー</b><br>
-          ${err.message}<br>
+          ${escapeHtml(String(err.message ?? err))}<br>
           <small>ページを再読み込みしてください</small>
         </div>
       `;
