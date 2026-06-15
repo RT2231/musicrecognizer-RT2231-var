@@ -3626,15 +3626,16 @@ function clearComparison() {
 }
 
 function updateComparisonView() {
-  const wrap  = document.getElementById("comparisonTableWrap");
-  const count = document.getElementById("comparisonCount");
-  const fab   = document.getElementById("compareFab");
+  const wrap     = document.getElementById("comparisonTableWrap");
+  const count    = document.getElementById("comparisonCount");
+  const fab      = document.getElementById("compareFab");
   const fabCount = document.getElementById("compareFabCount");
-  if (count) count.textContent = comparisonList.length;
-  if (fab)   fab.style.display = comparisonList.length > 0 ? "" : "none";
+  if (count)    count.textContent    = comparisonList.length;
+  if (fab)      fab.style.display    = comparisonList.length > 0 ? "" : "none";
   if (fabCount) fabCount.textContent = comparisonList.length;
 
   if (!wrap) return;
+
   if (comparisonList.length === 0) {
     wrap.innerHTML = "<div class='cloud-sync-hint'>比較リストは空です。認識結果の「➕ 比較リストに追加」ボタンで追加してください。</div>";
     return;
@@ -3651,22 +3652,33 @@ function updateComparisonView() {
     { key: "durationMs",  label: "再生時間",
       fmt: v => v ? `${Math.floor(v/60000)}:${String(Math.floor((v%60000)/1000)).padStart(2,"0")}` : "—" },
     { key: "spotifyUrl",  label: "Spotify",
-      fmt: v => v ? `<a href="${escapeHtml(v)}" target="_blank" class="compare-link">開く</a>` : "—" },
+      fmt: v => v && /^https:\/\/open\.spotify\.com\//.test(v)
+        ? `<a href="${escapeHtml(v)}" target="_blank" rel="noopener" class="compare-link">開く ↗</a>`
+        : "—" },
   ];
 
+  // ヘッダー行（アルバムアート + 曲名 + 削除ボタン）
+  const headerCells = comparisonList.map((t, i) => `
+    <th>
+      ${t.albumArt ? `<img src="${escapeHtml(t.albumArt)}" class="compare-art" alt="art">` : '<div class="compare-art" style="background:var(--bg-deep);display:inline-block;"></div>'}
+      <div style="font-size:.8rem;margin-top:4px;max-width:120px;white-space:normal;word-break:break-word;">${escapeHtml(t.title || '')}</div>
+      <button class="compare-remove-btn" onclick="removeFromComparison(${i})" title="削除">✕ 削除</button>
+    </th>`).join("");
+
   let html = `<table class="comparison-table">
-    <thead><tr><th>項目</th>${comparisonList.map((_, i) => `<th>曲 ${i+1} <button class="compare-remove-btn" onclick="removeFromComparison(${i})">✕</button></th>`).join("")}</tr></thead>
+    <thead><tr><th style="min-width:90px;">項目</th>${headerCells}</tr></thead>
     <tbody>`;
 
   for (const f of fields) {
-    html += `<tr><td class="compare-field-label">${f.label}</td>`;
+    html += `<tr><td class="compare-field-label">${escapeHtml(f.label)}</td>`;
     const vals = comparisonList.map(t => {
       const raw = t?.[f.key];
       if (f.fmt) return f.fmt(raw);
       return raw ? escapeHtml(String(raw)) : "<span class='compare-empty'>—</span>";
     });
-    // 値が全部同じなら通常、違えば強調
-    const allSame = vals.every(v => v === vals[0]);
+    // 値が全部同じなら通常、違えばハイライト（空欄は除外して比較）
+    const nonEmpty = vals.filter(v => v !== "<span class='compare-empty'>—</span>");
+    const allSame  = nonEmpty.length === 0 || nonEmpty.every(v => v === nonEmpty[0]);
     html += vals.map(v => `<td class="${allSame ? "" : "compare-diff"}">${v}</td>`).join("");
     html += "</tr>";
   }

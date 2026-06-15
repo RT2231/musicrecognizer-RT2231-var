@@ -2957,16 +2957,32 @@ body.dark .export-fmt-note  { color: #6b7280; }
 .comparison-table { border-collapse: collapse; width: 100%; font-size: .85rem; }
 .comparison-table th,
 .comparison-table td { border: 1px solid var(--border); padding: 7px 10px; text-align: left; white-space: nowrap; }
-.comparison-table thead th { background: var(--surface); font-weight: 600; position: sticky; top: 0; z-index: 1; }
-.compare-field-label { background: var(--surface); font-weight: 500; white-space: nowrap; }
-.compare-diff { background: rgba(234,179,8,.12); font-weight: 600; }
-.compare-empty { color: var(--text-muted); }
-.compare-remove-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: .8rem; margin-left: 4px; padding: 0 2px; }
-.compare-remove-btn:hover { color: var(--error); }
-.compare-link { color: var(--primary); }
-.comparison-count { font-size: .85rem; background: var(--primary); color: #fff; border-radius: 99px; padding: 1px 7px; margin-left: 4px; }
-.compare-add-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: .83rem; margin-top: 6px; }
-.compare-add-btn:hover { background: var(--hover); }
+.comparison-table thead th { background: var(--bg-surface); font-weight: 600; position: sticky; top: 0; z-index: 1; }
+.compare-field-label { background: var(--bg-surface); font-weight: 500; white-space: nowrap; position: sticky; left: 0; z-index: 2; }
+.compare-diff { background: rgba(234,179,8,.15); font-weight: 600; }
+.compare-empty { color: var(--txt-muted); }
+.compare-remove-btn { background: none; border: none; cursor: pointer; color: var(--txt-muted); font-size: .8rem; margin-left: 4px; padding: 0 2px; box-shadow: none; }
+.compare-remove-btn:hover { color: var(--error); background: none; transform: none; }
+.compare-link { color: var(--accent); }
+.comparison-count { font-size: .85rem; background: var(--accent); color: #fff; border-radius: 99px; padding: 1px 7px; margin-left: 4px; }
+.compare-add-btn { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: .83rem; margin-top: 6px; box-shadow: none; color: var(--txt-secondary); }
+.compare-add-btn:hover { background: var(--bg-deep); box-shadow: none; transform: none; }
+.compare-art { width: 80px; height: 80px; object-fit: cover; border-radius: var(--radius-sm); }
+.compare-fab {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 99px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(79,70,229,.4);
+  transition: transform .2s, box-shadow .2s;
+  white-space: nowrap;
+}
+.compare-fab:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(79,70,229,.5); }
+body.dark .compare-field-label { background: var(--bg-surface); }
 .compare-fab { background: var(--primary); color: #fff; border: none; border-radius: 99px; padding: 8px 14px; cursor: pointer; font-size: .9rem; font-weight: 600; white-space: nowrap; }
 .compare-fab:hover { opacity: .85; }
 
