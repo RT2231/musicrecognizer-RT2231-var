@@ -1403,15 +1403,19 @@ async function loadUserRanking() {
       el.innerHTML = "<div class='cloud-sync-hint'>データがありません</div>";
       return;
     }
-    el.innerHTML = json.ranking.map((item, i) => `
+    el.innerHTML = json.ranking.map((item, i) => {
+      const rankClass = i < 3 ? ["gold","silver","bronze"][i] : "normal";
+      const count     = parseInt(item.count, 10) || 0;
+      return `
       <div class="ranking-item">
-        <span class="rank-num rank-num--${i < 3 ? ["gold","silver","bronze"][i] : "normal"}">${i + 1}</span>
+        <span class="rank-num rank-num--${rankClass}">${i + 1}</span>
         <div class="ranking-item-info">
           <div class="ranking-item-title">${escapeHtml(item.title)}</div>
           <div class="ranking-item-artist">${escapeHtml(item.artist)}</div>
         </div>
-        <span class="ranking-count">${item.count}<span class="ranking-count-unit">回</span></span>
-      </div>`).join("");
+        <span class="ranking-count">${count}<span class="ranking-count-unit">回</span></span>
+      </div>`;
+    }).join("");
   } catch {
     el.innerHTML = "<div class='cloud-sync-hint'>取得できませんでした</div>";
   }
@@ -3521,15 +3525,15 @@ async function downloadArt(url, filename) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const blob = await res.blob();
     const blobUrl = URL.createObjectURL(blob);
-    // blob: URL であることを確認（Snyk DOM XSS 対策）
     if (!blobUrl.startsWith('blob:')) throw new Error('Invalid blob URL');
     const safeFilename = filename.replace(/[^a-zA-Z0-9_\-]/g, '_');
+    // appendChild 不要（モダンブラウザは DOM に追加せずクリック可能）
     const a = document.createElement('a');
     a.href     = blobUrl;
     a.download = `${safeFilename}_cover.jpg`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    a.style.display = 'none';
+    a.rel = 'noopener';
+    a.dispatchEvent(new MouseEvent('click', { bubbles: false, cancelable: true }));
     setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
     showToast('ダウンロードを開始しました', 'success');
   } catch (err) {
@@ -3753,8 +3757,9 @@ async function loadSpotifyPlaylist() {
       </div>`;
 
     const tracksHtml = json.tracks.map((t, i) => {
-      const duration = t.duration_ms
-        ? `${Math.floor(t.duration_ms / 60000)}:${String(Math.floor((t.duration_ms % 60000) / 1000)).padStart(2, "0")}`
+      const rawMs    = parseInt(t.duration_ms, 10);
+      const duration = rawMs > 0
+        ? `${Math.floor(rawMs / 60000)}:${String(Math.floor((rawMs % 60000) / 1000)).padStart(2, "0")}`
         : "";
       return `
         <div class="spotify-pl-item" onclick="embedSpotifyTrack('${escapeHtml(t.id).replace(/'/g,"\\'")}')">
