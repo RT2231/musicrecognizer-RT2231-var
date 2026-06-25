@@ -1403,19 +1403,48 @@ async function loadUserRanking() {
       el.innerHTML = "<div class='cloud-sync-hint'>データがありません</div>";
       return;
     }
-    el.innerHTML = json.ranking.map((item, i) => {
+    // DOM API で構築（XSS 対策）
+    const frag = document.createDocumentFragment();
+    json.ranking.forEach((item, i) => {
       const rankClass = i < 3 ? ["gold","silver","bronze"][i] : "normal";
       const count     = parseInt(item.count, 10) || 0;
-      return `
-      <div class="ranking-item">
-        <span class="rank-num rank-num--${rankClass}">${i + 1}</span>
-        <div class="ranking-item-info">
-          <div class="ranking-item-title">${escapeHtml(item.title)}</div>
-          <div class="ranking-item-artist">${escapeHtml(item.artist)}</div>
-        </div>
-        <span class="ranking-count">${count}<span class="ranking-count-unit">回</span></span>
-      </div>`;
-    }).join("");
+
+      const div = document.createElement("div");
+      div.className = "ranking-item";
+
+      const numSpan = document.createElement("span");
+      numSpan.className   = `rank-num rank-num--${rankClass}`;
+      numSpan.textContent = String(i + 1);
+      div.appendChild(numSpan);
+
+      const info = document.createElement("div");
+      info.className = "ranking-item-info";
+
+      const titleEl = document.createElement("div");
+      titleEl.className   = "ranking-item-title";
+      titleEl.textContent = item.title ?? "";
+
+      const artistEl = document.createElement("div");
+      artistEl.className   = "ranking-item-artist";
+      artistEl.textContent = item.artist ?? "";
+
+      info.appendChild(titleEl);
+      info.appendChild(artistEl);
+      div.appendChild(info);
+
+      const countSpan = document.createElement("span");
+      countSpan.className = "ranking-count";
+      countSpan.textContent = String(count);
+      const unit = document.createElement("span");
+      unit.className   = "ranking-count-unit";
+      unit.textContent = "回";
+      countSpan.appendChild(unit);
+      div.appendChild(countSpan);
+
+      frag.appendChild(div);
+    });
+    el.innerHTML = "";
+    el.appendChild(frag);
   } catch {
     el.innerHTML = "<div class='cloud-sync-hint'>取得できませんでした</div>";
   }
@@ -3518,29 +3547,32 @@ function toggleArtSize(img) {
 }
 
 async function downloadArt(url, filename) {
+  // アートワーク URL は信頼できる CDN ドメインのみ許可（オープンリダイレクト対策）
+  const ALLOWED_CDN = /^https:\/\/(is\d*\.mzstatic\.com|i\.scdn\.co|e-cdns-images\.dzcdn\.net|img\.youtube\.com|lh\d*\.googleusercontent\.com)\//;
+  if (!url || !ALLOWED_CDN.test(url)) {
+    showToast('ダウンロードできないURLです', 'error');
+    return;
+  }
   try {
     showToast('ダウンロード中...', 'info');
-    // fetch で取得して Blob URL 経由でダウンロード（クロスオリジン対応）
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const blob = await res.blob();
+    const blob    = await res.blob();
     const blobUrl = URL.createObjectURL(blob);
     if (!blobUrl.startsWith('blob:')) throw new Error('Invalid blob URL');
     const safeFilename = filename.replace(/[^a-zA-Z0-9_\-]/g, '_');
-    // appendChild 不要（モダンブラウザは DOM に追加せずクリック可能）
     const a = document.createElement('a');
     a.href     = blobUrl;
     a.download = `${safeFilename}_cover.jpg`;
-    a.style.display = 'none';
-    a.rel = 'noopener';
-    a.dispatchEvent(new MouseEvent('click', { bubbles: false, cancelable: true }));
+    a.rel      = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
     showToast('ダウンロードを開始しました', 'success');
   } catch (err) {
     console.error('Download failed:', err);
-    // フォールバック: 新しいタブで開く
-    window.open(url, '_blank');
-    showToast('新しいタブで開きました（手動で保存してください）', 'info');
+    showToast('ダウンロードに失敗しました', 'error');
   }
 }
 
@@ -3750,32 +3782,86 @@ async function loadSpotifyPlaylist() {
       ? json.playlist_url : null;
     const safeTotal = parseInt(json.total, 10) || 0;
 
-    const headerHtml = `
-      <div class="spotify-pl-header">
-        <span class="spotify-pl-count">${safeTotal} 曲</span>
-        ${safePlUrl ? `<a href="${escapeHtml(safePlUrl)}" target="_blank" rel="noopener" class="spotify-open-link">Spotify で開く ↗</a>` : ''}
-      </div>`;
+    // ヘッダーを DOM API で構築
+    const header = document.createElement("div");
+    header.className = "spotify-pl-header";
 
-    const tracksHtml = json.tracks.map((t, i) => {
+    const countSpan = document.createElement("span");
+    countSpan.className = "spotify-pl-count";
+    countSpan.textContent = `${safeTotal} 曲`;
+    header.appendChild(countSpan);
+
+    if (safePlUrl) {
+      const link = document.createElement("a");
+      link.href      = safePlUrl;
+      link.target    = "_blank";
+      link.rel       = "noopener";
+      link.className = "spotify-open-link";
+      link.textContent = "Spotify で開く ↗";
+      header.appendChild(link);
+    }
+
+    // トラックリストを DOM API で構築（onclick 属性を addEventListener に変更）
+    const list = document.createElement("div");
+    list.className = "spotify-pl-list";
+
+    json.tracks.forEach(t => {
       const rawMs    = parseInt(t.duration_ms, 10);
       const duration = rawMs > 0
         ? `${Math.floor(rawMs / 60000)}:${String(Math.floor((rawMs % 60000) / 1000)).padStart(2, "0")}`
         : "";
-      return `
-        <div class="spotify-pl-item" onclick="embedSpotifyTrack('${escapeHtml(t.id).replace(/'/g,"\\'")}')">
-          ${t.artwork
-            ? `<img class="spotify-pl-art" src="${escapeHtml(t.artwork)}" alt="art" loading="lazy">`
-            : `<div class="spotify-pl-art spotify-pl-art--empty">🎵</div>`}
-          <div class="spotify-pl-info">
-            <div class="spotify-pl-title">${escapeHtml(t.name)}</div>
-            <div class="spotify-pl-artist">${escapeHtml(t.artist)}</div>
-          </div>
-          <span class="spotify-pl-duration">${duration}</span>
-          <span class="spotify-pl-play">▶</span>
-        </div>`;
-    }).join("");
 
-    content.innerHTML = headerHtml + `<div class="spotify-pl-list">${tracksHtml}</div>`;
+      const item = document.createElement("div");
+      item.className = "spotify-pl-item";
+      // addEventListener で onClick を設定（innerHTML の onclick 属性を回避）
+      const trackId = String(t.id || "");
+      item.addEventListener("click", () => embedSpotifyTrack(trackId));
+
+      if (t.artwork && /^https:\/\//.test(t.artwork)) {
+        const img = document.createElement("img");
+        img.className   = "spotify-pl-art";
+        img.src         = t.artwork;
+        img.alt         = "art";
+        img.loading     = "lazy";
+        item.appendChild(img);
+      } else {
+        const empty = document.createElement("div");
+        empty.className = "spotify-pl-art spotify-pl-art--empty";
+        empty.textContent = "🎵";
+        item.appendChild(empty);
+      }
+
+      const info = document.createElement("div");
+      info.className = "spotify-pl-info";
+
+      const titleEl = document.createElement("div");
+      titleEl.className   = "spotify-pl-title";
+      titleEl.textContent = t.name ?? "";
+
+      const artistEl = document.createElement("div");
+      artistEl.className   = "spotify-pl-artist";
+      artistEl.textContent = t.artist ?? "";
+
+      info.appendChild(titleEl);
+      info.appendChild(artistEl);
+      item.appendChild(info);
+
+      const durSpan = document.createElement("span");
+      durSpan.className   = "spotify-pl-duration";
+      durSpan.textContent = duration;
+      item.appendChild(durSpan);
+
+      const play = document.createElement("span");
+      play.className   = "spotify-pl-play";
+      play.textContent = "▶";
+      item.appendChild(play);
+
+      list.appendChild(item);
+    });
+
+    content.innerHTML = "";
+    content.appendChild(header);
+    content.appendChild(list);
 
   } catch (err) {
     content.innerHTML = `<div class="spotify-pl-empty">読み込みに失敗しました: ${escapeHtml(err.message)}</div>`;
