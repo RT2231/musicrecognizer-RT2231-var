@@ -21,6 +21,7 @@ const SHELL_FILES = [
   "./main.js",
   "./spotify-callback.html",
   "./favicon.png",
+  "./favicon.webp",
   "./manifest.json",
 ];
 

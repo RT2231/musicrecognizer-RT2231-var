@@ -42,8 +42,9 @@
     <meta name="twitter:description" content="ブラウザだけで完結する楽曲識別アプリ。音声ファイルをアップロードするか、マイクで録音するだけで曲名・アーティストを即座に特定します。" />
     <meta name="twitter:image" content="https://musicrecognizer-rt2231-var.vercel.app/favicon.png" />
 
+    <link rel="icon" type="image/webp" href="./favicon.webp" />
     <link rel="icon" type="image/png" href="./favicon.png" />
-    <link rel="shortcut icon" href="./favicon.png" />
+    <link rel="shortcut icon" href="./favicon.webp" />
     <link rel="apple-touch-icon" href="./favicon.png" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#4f46e5" />
@@ -51,6 +52,16 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Trackora" />
+    <!-- パフォーマンス: preconnect で外部ドメインの DNS/TLS を先行解決 -->
+    <link rel="preconnect" href="https://acrcloud.shirokuma0822.workers.dev" crossorigin />
+    <link rel="preconnect" href="https://www.googletagmanager.com" />
+    <link rel="preconnect" href="https://open.spotify.com" crossorigin />
+    <link rel="preconnect" href="https://trackora.instatus.com" crossorigin />
+    <link rel="dns-prefetch" href="https://musicbrainz.org" />
+    <link rel="dns-prefetch" href="https://itunes.apple.com" />
+    <link rel="dns-prefetch" href="https://www.youtube.com" />
+    <!-- style.css を preload して FCP を改善 -->
+    <link rel="preload" href="./style.css" as="style" />
     <link rel="stylesheet" href="./style.css" />
     <script>
       window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
@@ -487,7 +498,7 @@
       </div>
     </div>
 
-    <script src="./main.js"></script>
+    <script src="./main.js" defer></script>
     <!-- Service Worker 登録（オフライン対応） -->
     <script>
       if ('serviceWorker' in navigator) {
