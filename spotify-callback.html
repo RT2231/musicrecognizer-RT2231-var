@@ -40,9 +40,9 @@
         return;
       }
 
-      // state 検証
+      // state 検証（CSRF対策。savedState が無い場合も拒否する）
       const savedState = opener?.localStorage?.getItem("spotify_auth_state");
-      if (savedState && savedState !== state) {
+      if (!savedState || savedState !== state) {
         statusEl.textContent = "セキュリティエラー（state 不一致）";
         setTimeout(() => window.close(), 2000);
         return;

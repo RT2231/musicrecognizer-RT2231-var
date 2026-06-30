@@ -2000,6 +2000,11 @@ function _exportAsJson(items) {
  * @param {Array} items
  */
 function _exportAsCsv(items) {
+  // CSV インジェクション対策: 数式と解釈されうる先頭文字をエスケープ
+  const csvSafe = (s) => {
+    const str = String(s ?? "");
+    return /^[=+\-@\t\r]/.test(str) ? `'${str}` : str;
+  };
   const header = ["番号", "曲名", "アーティスト", "信頼度(%)", "認識日時(JST)", "お気に入り"];
   const rows   = items.map(it => {
     const d   = new Date(it.time);
@@ -2007,8 +2012,8 @@ function _exportAsCsv(items) {
     const dateStr = jst.toISOString().replace("T", " ").slice(0, 19);
     return [
       it.id,
-      `"${(it.title  || "").replace(/"/g, '""')}"`,
-      `"${(it.artist || "").replace(/"/g, '""')}"`,
+      `"${csvSafe(it.title).replace(/"/g, '""')}"`,
+      `"${csvSafe(it.artist).replace(/"/g, '""')}"`,
       it.confidence ?? 0,
       dateStr,
       it.starred ? "⭐" : ""
@@ -3586,7 +3591,12 @@ function copyArtUrl(url) {
 }
 
 function openArtNewTab(url) {
-  window.open(url, '_blank');
+  const ALLOWED_CDN = /^https:\/\/(is\d*\.mzstatic\.com|i\.scdn\.co|e-cdns-images\.dzcdn\.net|img\.youtube\.com|lh\d*\.googleusercontent\.com)\//;
+  if (!url || !ALLOWED_CDN.test(url)) {
+    showToast('開けないURLです', 'error');
+    return;
+  }
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 // 要素IDベースのヘルパー関数
